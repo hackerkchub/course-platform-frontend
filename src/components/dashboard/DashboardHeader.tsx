@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/providers/auth-provider';
 import { DashboardNavLinks } from './DashboardNavLinks';
+import { resolveDashboardIcon } from './icons';
 import type { DashboardNavConfig } from '@/types/dashboard';
 import type { UserProfile } from '@/types/auth';
 
@@ -24,7 +25,7 @@ export function DashboardHeader({
 }: DashboardHeaderProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { logout, isLoggingOut } = useAuth();
-  const BrandIcon = navConfig.brandIcon;
+  const BrandIcon = resolveDashboardIcon(navConfig.brandIcon);
 
   return (
     <>

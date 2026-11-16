@@ -52,7 +52,7 @@ declare global {
  * 4. Rejects explicit schemes (e.g. 'http:', 'https:', 'javascript:', 'data:')
  * 5. Returns safe fallback '/' if validation fails.
  */
-export function sanitizeRedirectUrl(target: string | null | undefined): string {
+function sanitizeRedirectUrl(target: string | null | undefined): string {
   if (!target || typeof target !== 'string') {
     return '/';
   }
@@ -93,7 +93,7 @@ export function sanitizeRedirectUrl(target: string | null | undefined): string {
  * 4. Conforms to standard Google Web Client ID format:
  *    <project-number>-<client-hash>.apps.googleusercontent.com
  */
-export function isGoogleClientIdValid(clientId: string | null | undefined): boolean {
+function isGoogleClientIdValid(clientId: string | null | undefined): boolean {
   if (!clientId || typeof clientId !== 'string') {
     return false;
   }

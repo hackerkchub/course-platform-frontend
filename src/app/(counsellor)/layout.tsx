@@ -3,13 +3,6 @@ import type { Metadata } from 'next';
 import { requireRole } from '@/lib/auth/server-auth';
 import { DashboardShell } from '@/components/dashboard/DashboardShell';
 import type { DashboardNavConfig } from '@/types/dashboard';
-import {
-  Headphones,
-  LayoutDashboard,
-  Inbox,
-  Calendar,
-  FileCheck,
-} from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Counsellor Lead Desk',
@@ -19,14 +12,14 @@ export const metadata: Metadata = {
 const counsellorNavConfig: DashboardNavConfig = {
   title: 'Counsellor Desk',
   brandHref: '/counsellor/dashboard',
-  brandIcon: Headphones,
+  brandIcon: 'Headphones',
   roleBadge: 'Counsellor',
   roleBadgeVariant: 'accent',
   items: [
-    { label: 'Desk Overview', href: '/counsellor/dashboard', icon: LayoutDashboard, exact: true },
-    { label: 'Demo Leads Pipeline', href: '/counsellor/leads', icon: Inbox },
-    { label: 'Demo Schedules', href: '/counsellor/demos', icon: Calendar },
-    { label: 'Eligibility Consultations', href: '/counsellor/eligibility', icon: FileCheck },
+    { label: 'Desk Overview', href: '/counsellor/dashboard', icon: 'LayoutDashboard', exact: true },
+    { label: 'Demo Leads Pipeline', href: '/counsellor/leads', icon: 'Inbox' },
+    { label: 'Demo Schedules', href: '/counsellor/demos', icon: 'Calendar' },
+    { label: 'Eligibility Consultations', href: '/counsellor/eligibility', icon: 'FileCheck' },
   ],
 };
 

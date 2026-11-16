@@ -31,6 +31,8 @@ export interface AdminCourseItem {
   is_trending?: boolean;
   enrollment_count?: number;
   total_views?: number;
+  whatsapp_contact_id?: number | null;
+  whatsapp_enabled?: boolean;
   created_at: string;
   updated_at?: string;
 }
@@ -68,6 +70,8 @@ export interface CreateCoursePayload {
   is_new?: boolean;
   is_trending?: boolean;
   display_order?: number;
+  whatsapp_contact_id?: number | null;
+  whatsapp_enabled?: boolean;
   tags?: string[];
   what_you_will_learn?: string[];
   tools_covered?: string[];
@@ -327,4 +331,53 @@ export interface CreateOfferPayload {
   per_user_limit?: number;
   is_active?: boolean;
 }
+
+export interface AdminDemoSettings {
+  id?: number;
+  course_id: number;
+  demo_enabled: boolean;
+  demo_request_enabled: boolean;
+  demo_type?: 'live' | 'recorded' | null;
+  demo_duration_minutes?: number;
+  demo_schedule?: string | null;
+  time_slots?: string[];
+  accepting_requests: boolean;
+  request_start_at?: string | null;
+  request_end_at?: string | null;
+  max_requests_per_slot?: number;
+  allowed_demo_types?: ('live' | 'recorded')[];
+  meeting_platform?: string | null;
+  requires_approval: boolean;
+  form_title?: string | null;
+  submit_button_text?: string | null;
+  success_message?: string | null;
+  form_fields?: Record<string, unknown>[];
+  custom_questions?: Record<string, unknown>[];
+  honeypot_enabled?: boolean;
+  rate_limit_per_hour?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface UpdateDemoSettingsPayload {
+  demo_enabled: boolean;
+  demo_request_enabled: boolean;
+  demo_type?: 'live' | 'recorded' | null;
+  allowed_demo_types?: ('live' | 'recorded')[];
+  demo_duration_minutes?: number;
+  requires_approval?: boolean;
+  accepting_requests?: boolean;
+  meeting_platform?: string | null;
+  max_requests_per_slot?: number;
+  rate_limit_per_hour?: number;
+  honeypot_enabled?: boolean;
+  demo_schedule?: string | null;
+  time_slots?: string[];
+  request_start_at?: string | null;
+  request_end_at?: string | null;
+  form_title?: string | null;
+  submit_button_text?: string | null;
+  success_message?: string | null;
+}
+
 

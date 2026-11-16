@@ -3,16 +3,6 @@ import type { Metadata } from 'next';
 import { requireRole } from '@/lib/auth/server-auth';
 import { DashboardShell } from '@/components/dashboard/DashboardShell';
 import type { DashboardNavConfig } from '@/types/dashboard';
-import {
-  GraduationCap,
-  LayoutDashboard,
-  BookOpen,
-  Heart,
-  Calendar,
-  Award,
-  Star,
-  User,
-} from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Student Portal',
@@ -22,17 +12,17 @@ export const metadata: Metadata = {
 const studentNavConfig: DashboardNavConfig = {
   title: 'Student Portal',
   brandHref: '/student/dashboard',
-  brandIcon: GraduationCap,
+  brandIcon: 'GraduationCap',
   roleBadge: 'Student',
   roleBadgeVariant: 'primary',
   items: [
-    { label: 'Overview', href: '/student/dashboard', icon: LayoutDashboard, exact: true },
-    { label: 'My Courses', href: '/student/courses', icon: BookOpen },
-    { label: 'Wishlist', href: '/student/wishlist', icon: Heart },
-    { label: 'Demo Classes', href: '/student/demo-classes', icon: Calendar },
-    { label: 'Eligibility', href: '/student/eligibility', icon: Award },
-    { label: 'My Reviews', href: '/student/reviews', icon: Star },
-    { label: 'Profile & Settings', href: '/student/profile', icon: User },
+    { label: 'Overview', href: '/student/dashboard', icon: 'LayoutDashboard', exact: true },
+    { label: 'My Courses', href: '/student/courses', icon: 'BookOpen' },
+    { label: 'Wishlist', href: '/student/wishlist', icon: 'Heart' },
+    { label: 'Demo Classes', href: '/student/demo-classes', icon: 'Calendar' },
+    { label: 'Eligibility', href: '/student/eligibility', icon: 'Award' },
+    { label: 'My Reviews', href: '/student/reviews', icon: 'Star' },
+    { label: 'Profile & Settings', href: '/student/profile', icon: 'User' },
   ],
 };
 

@@ -13,6 +13,8 @@ import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { adminCoursesApi } from '@/lib/api/admin-courses';
 import { adminCategoriesApi } from '@/lib/api/admin-categories';
 import { instructorApi } from '@/lib/api/instructor';
+import { getWhatsAppContacts } from '@/lib/api/admin-whatsapp';
+import type { WhatsAppContact } from '@/types/whatsapp';
 import { apiClient } from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
 import { getErrorMessage, slugify } from '@/lib/utils';
@@ -52,6 +54,7 @@ import {
   ArrowDown,
   X,
   Package,
+  MessageCircle,
 } from 'lucide-react';
 
 const STEPS = [
@@ -65,6 +68,8 @@ const STEPS = [
 
 const STEP_3_TABS = [
   { id: 'pricing', label: 'Commercials' },
+  { id: 'demo', label: 'Demo Class Settings' },
+  { id: 'whatsapp', label: 'WhatsApp Admissions' },
   { id: 'points', label: 'Key Highlights' },
   { id: 'benefits', label: 'Career Benefits' },
   { id: 'faqs', label: 'FAQs' },
@@ -195,6 +200,21 @@ export default function CourseEditorPage() {
   const [offerPerUserLimit, setOfferPerUserLimit] = useState<number>(1);
   const [offerIsActive, setOfferIsActive] = useState<boolean>(true);
 
+  // Step 3: Demo Class Settings
+  const [demoEnabled, setDemoEnabled] = useState<boolean>(false);
+  const [demoRequestEnabled, setDemoRequestEnabled] = useState<boolean>(false);
+  const [demoTypeLive, setDemoTypeLive] = useState<boolean>(true);
+  const [demoTypeRecorded, setDemoTypeRecorded] = useState<boolean>(true);
+  const [demoDurationMinutes, setDemoDurationMinutes] = useState<number>(60);
+  const [demoRequiresApproval, setDemoRequiresApproval] = useState<boolean>(true);
+  const [demoAcceptingRequests, setDemoAcceptingRequests] = useState<boolean>(true);
+  const [demoMeetingPlatform, setDemoMeetingPlatform] = useState<string>('Google Meet');
+  const [demoMaxRequestsPerSlot, setDemoMaxRequestsPerSlot] = useState<number>(10);
+  const [demoRateLimitPerHour, setDemoRateLimitPerHour] = useState<number>(5);
+  const [isDemoLoading, setIsDemoLoading] = useState<boolean>(false);
+  const [isDemoSaving, setIsDemoSaving] = useState<boolean>(false);
+  const [demoLoaded, setDemoLoaded] = useState<boolean>(false);
+
   // Step 4: Curriculum
   const [modules, setModules] = useState<ModuleItem[]>([]);
   const [isCurriculumLoading, setIsCurriculumLoading] = useState<boolean>(false);
@@ -234,6 +254,14 @@ export default function CourseEditorPage() {
   const [seoDescription, setSeoDescription] = useState<string>('');
   const [status, setStatus] = useState<CourseStatus>('draft');
 
+  // Step 3: WhatsApp Routing State
+  const [waContactsList, setWaContactsList] = useState<WhatsAppContact[]>([]);
+  const [waRoutingMode, setWaRoutingMode] = useState<'default' | 'custom' | 'disabled'>('default');
+  const [waSelectedContactId, setWaSelectedContactId] = useState<number | null>(null);
+  const [isWaLoading, setIsWaLoading] = useState<boolean>(false);
+  const [isWaSaving, setIsWaSaving] = useState<boolean>(false);
+  const [waLoaded, setWaLoaded] = useState<boolean>(false);
+
   // Load Course and Metadata
   const loadCourseData = useCallback(async () => {
     setIsLoading(true);
@@ -269,6 +297,18 @@ export default function CourseEditorPage() {
       setPrice(c.price || 0);
       setOfferPrice(c.offer_price || 0);
       setStatus(c.status || 'draft');
+
+      // Populate WhatsApp Admissions state
+      if (c.whatsapp_enabled === false) {
+        setWaRoutingMode('disabled');
+        setWaSelectedContactId(null);
+      } else if (c.whatsapp_contact_id) {
+        setWaRoutingMode('custom');
+        setWaSelectedContactId(c.whatsapp_contact_id);
+      } else {
+        setWaRoutingMode('default');
+        setWaSelectedContactId(null);
+      }
     } catch (err) {
       setErrorMessage(getErrorMessage(err, 'Failed to load course details'));
     } finally {
@@ -387,13 +427,62 @@ export default function CourseEditorPage() {
     }
   }, [courseId]);
 
+  // Load Demo Settings on Step 3 (Demo Tab)
+  const loadDemoSettings = useCallback(async () => {
+    if (!courseId) return;
+    setIsDemoLoading(true);
+    try {
+      const data = await adminCoursesApi.getDemoSettings(courseId);
+      if (data) {
+        setDemoEnabled(Boolean(data.demo_enabled));
+        setDemoRequestEnabled(Boolean(data.demo_request_enabled));
+        const allowed = Array.isArray(data.allowed_demo_types) ? data.allowed_demo_types : [];
+        setDemoTypeLive(allowed.includes('live') || data.demo_type === 'live');
+        setDemoTypeRecorded(allowed.includes('recorded') || data.demo_type === 'recorded');
+        setDemoDurationMinutes(Number(data.demo_duration_minutes) || 60);
+        setDemoRequiresApproval(Boolean(data.requires_approval));
+        setDemoAcceptingRequests(data.accepting_requests !== false);
+        setDemoMeetingPlatform(data.meeting_platform || 'Google Meet');
+        setDemoMaxRequestsPerSlot(Number(data.max_requests_per_slot) || 10);
+        setDemoRateLimitPerHour(Number(data.rate_limit_per_hour) || 5);
+      }
+      setDemoLoaded(true);
+    } catch (err) {
+      console.error('Failed to load demo settings', err);
+    } finally {
+      setIsDemoLoading(false);
+    }
+  }, [courseId]);
+
+  // Load WhatsApp Contacts on Step 3 (WhatsApp Tab)
+  const loadWhatsAppSettings = useCallback(async () => {
+    setIsWaLoading(true);
+    try {
+      const res = await getWhatsAppContacts({ limit: 100 });
+      setWaContactsList(res.data || []);
+      setWaLoaded(true);
+    } catch (err) {
+      console.error('Failed to load WhatsApp contacts', err);
+    } finally {
+      setIsWaLoading(false);
+    }
+  }, []);
+
   // Trigger lazy tab loads
   useEffect(() => {
-    if (activeStep === 3) loadEnhancements();
+    if (activeStep === 3) {
+      loadEnhancements();
+      if (activeStep3Tab === 'demo' && !demoLoaded) {
+        loadDemoSettings();
+      }
+      if (activeStep3Tab === 'whatsapp' && !waLoaded) {
+        loadWhatsAppSettings();
+      }
+    }
     if (activeStep === 4) loadCurriculum();
     if (activeStep === 5) loadBatches();
     if (activeStep === 6) loadSeo();
-  }, [activeStep, loadEnhancements, loadCurriculum, loadBatches, loadSeo]);
+  }, [activeStep, activeStep3Tab, demoLoaded, waLoaded, loadEnhancements, loadDemoSettings, loadWhatsAppSettings, loadCurriculum, loadBatches, loadSeo]);
 
   const handleStepChange = (step: number) => {
     setActiveStep(step);
@@ -485,7 +574,79 @@ export default function CourseEditorPage() {
     }
   };
 
-  // 3B: Course Points Handlers
+  // 3B: Save Demo Class Settings
+  const handleSaveDemoSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!courseId) return;
+    setIsDemoSaving(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    const allowedTypes: ('live' | 'recorded')[] = [];
+    if (demoTypeLive) allowedTypes.push('live');
+    if (demoTypeRecorded) allowedTypes.push('recorded');
+
+    if (demoEnabled && allowedTypes.length === 0) {
+      setErrorMessage('Please select at least one allowed demo type (Live or Recorded).');
+      setIsDemoSaving(false);
+      return;
+    }
+
+    try {
+      await adminCoursesApi.updateDemoSettings(courseId, {
+        demo_enabled: demoEnabled,
+        demo_request_enabled: demoRequestEnabled,
+        demo_type: demoTypeLive ? 'live' : 'recorded',
+        allowed_demo_types: allowedTypes,
+        demo_duration_minutes: demoDurationMinutes,
+        requires_approval: demoRequiresApproval,
+        accepting_requests: demoAcceptingRequests,
+        meeting_platform: demoMeetingPlatform,
+        max_requests_per_slot: demoMaxRequestsPerSlot,
+        rate_limit_per_hour: demoRateLimitPerHour,
+      });
+      setSuccessMessage('Demo class settings saved successfully!');
+    } catch (err: unknown) {
+      setErrorMessage(getErrorMessage(err, 'Failed to update demo settings'));
+    } finally {
+      setIsDemoSaving(false);
+    }
+  };
+
+  // 3W: Save WhatsApp Admissions Routing
+  const handleSaveWhatsAppRouting = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!courseId) return;
+    setIsWaSaving(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    try {
+      let payload: { whatsapp_enabled: boolean; whatsapp_contact_id: number | null };
+      if (waRoutingMode === 'disabled') {
+        payload = { whatsapp_enabled: false, whatsapp_contact_id: null };
+      } else if (waRoutingMode === 'custom') {
+        if (!waSelectedContactId) {
+          setErrorMessage('Please select a specific WhatsApp line for this course.');
+          setIsWaSaving(false);
+          return;
+        }
+        payload = { whatsapp_enabled: true, whatsapp_contact_id: Number(waSelectedContactId) };
+      } else {
+        payload = { whatsapp_enabled: true, whatsapp_contact_id: null };
+      }
+
+      await adminCoursesApi.updateCourse(courseId, payload);
+      setSuccessMessage('WhatsApp Admissions routing updated successfully!');
+      loadCourseData();
+    } catch (err: unknown) {
+      setErrorMessage(getErrorMessage(err, 'Failed to update WhatsApp routing'));
+    } finally {
+      setIsWaSaving(false);
+    }
+  };
+
+  // 3C: Course Points Handlers
   const handleAddPoint = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPointText.trim()) return;
@@ -648,13 +809,13 @@ export default function CourseEditorPage() {
       updatedTestimonials = testimonialsList.map((t, idx) =>
         idx === editingTestimonialIndex
           ? {
-              ...t,
-              name: testimonialName.trim(),
-              text: testimonialText.trim(),
-              photo_url: testimonialPhotoUrl.trim() || null,
-              video_url: testimonialVideoUrl.trim() || null,
-              is_active: testimonialIsActive,
-            }
+            ...t,
+            name: testimonialName.trim(),
+            text: testimonialText.trim(),
+            photo_url: testimonialPhotoUrl.trim() || null,
+            video_url: testimonialVideoUrl.trim() || null,
+            is_active: testimonialIsActive,
+          }
           : t
       );
     } else {
@@ -1153,8 +1314,8 @@ export default function CourseEditorPage() {
                 course?.status === 'published'
                   ? 'success'
                   : course?.status === 'draft'
-                  ? 'warning'
-                  : 'default'
+                    ? 'warning'
+                    : 'default'
               }
             >
               {course?.status?.toUpperCase()}
@@ -1208,11 +1369,10 @@ export default function CourseEditorPage() {
               type="button"
               key={step.id}
               onClick={() => handleStepChange(step.id)}
-              className={`p-3 rounded-xl border text-center transition-all ${
-                isActive
-                  ? 'bg-teal-600 text-white border-teal-600 shadow-sm font-semibold'
-                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
-              }`}
+              className={`p-3 rounded-xl border text-center transition-all ${isActive
+                ? 'bg-teal-600 text-white border-teal-600 shadow-sm font-semibold'
+                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                }`}
             >
               <span className="text-xs">{step.label}</span>
             </button>
@@ -1266,7 +1426,7 @@ export default function CourseEditorPage() {
                 placeholder="master-full-stack-web-development"
               />
               <span className="text-[11px] text-slate-500">
-                Will be accessible at: https://softmaxs.com/courses/{slug || '[slug]'}
+                Will be accessible at: https://guidexa.in/courses/{slug || '[slug]'}
               </span>
             </div>
 
@@ -1482,11 +1642,10 @@ export default function CourseEditorPage() {
                   type="button"
                   key={tab.id}
                   onClick={() => setActiveStep3Tab(tab.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium shrink-0 transition-colors ${
-                    isCurrent
-                      ? 'bg-teal-600 text-white'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium shrink-0 transition-colors ${isCurrent
+                    ? 'bg-teal-600 text-white'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
                 >
                   {tab.label}
                 </button>
@@ -1621,7 +1780,350 @@ export default function CourseEditorPage() {
             </form>
           )}
 
-          {/* 3B: Course Points & Highlights */}
+          {/* 3B: Demo Class Settings */}
+          {activeStep3Tab === 'demo' && (
+            <form onSubmit={handleSaveDemoSettings} className="space-y-6">
+              <DashboardSection
+                title="Demo Class & Trial Booking Configuration"
+                subtitle="Configure live interactive trial sessions, recorded previews, booking constraints, and admin approval rules for prospective students."
+              >
+                {isDemoLoading ? (
+                  <div className="py-12 text-center text-xs text-slate-500">
+                    Loading demo settings...
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Primary Toggles */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                      <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={demoEnabled}
+                          onChange={(e) => setDemoEnabled(e.target.checked)}
+                          className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                        />
+                        <div>
+                          <span className="block text-xs font-semibold text-slate-900 dark:text-slate-100">
+                            Enable Demo Class
+                          </span>
+                          <span className="block text-xs text-slate-500">
+                            Allow prospective students to request or experience a demo session for this course.
+                          </span>
+                        </div>
+                      </label>
+
+                      <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={demoRequestEnabled}
+                          onChange={(e) => setDemoRequestEnabled(e.target.checked)}
+                          className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                        />
+                        <div>
+                          <span className="block text-xs font-semibold text-slate-900 dark:text-slate-100">
+                            Enable Student Demo Requests
+                          </span>
+                          <span className="block text-xs text-slate-500">
+                            Display the &quot;Book Free Demo Class&quot; action CTA on the public course details page.
+                          </span>
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Demo Types & Approval Rules */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Allowed Demo Types */}
+                      <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3">
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          Allowed Demo Types <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="space-y-2">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={demoTypeLive}
+                              onChange={(e) => setDemoTypeLive(e.target.checked)}
+                              className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                            />
+                            <span className="text-xs text-slate-800 dark:text-slate-200">
+                              Live Interactive Demo (Instructor-led)
+                            </span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={demoTypeRecorded}
+                              onChange={(e) => setDemoTypeRecorded(e.target.checked)}
+                              className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                            />
+                            <span className="text-xs text-slate-800 dark:text-slate-200">
+                              Recorded Demo Overview (Self-paced)
+                            </span>
+                          </label>
+                        </div>
+                        <p className="text-[11px] text-slate-500">
+                          Students will be able to choose between the selected formats during booking.
+                        </p>
+                      </div>
+
+                      {/* Operational Toggles */}
+                      <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3">
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          Operational & Approval Settings
+                        </label>
+                        <div className="space-y-2">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={demoRequiresApproval}
+                              onChange={(e) => setDemoRequiresApproval(e.target.checked)}
+                              className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                            />
+                            <span className="text-xs text-slate-800 dark:text-slate-200">
+                              Admin / Counsellor Approval Required
+                            </span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={demoAcceptingRequests}
+                              onChange={(e) => setDemoAcceptingRequests(e.target.checked)}
+                              className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                            />
+                            <span className="text-xs text-slate-800 dark:text-slate-200">
+                              Currently Accepting New Requests
+                            </span>
+                          </label>
+                        </div>
+                        <p className="text-[11px] text-slate-500">
+                          When approval is required, requests are received in pending status until reviewed by staff.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Operational Details */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          Demo Duration (Minutes)
+                        </label>
+                        <select
+                          value={demoDurationMinutes}
+                          onChange={(e) => setDemoDurationMinutes(Number(e.target.value))}
+                          className="w-full text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        >
+                          <option value={30}>30 Minutes</option>
+                          <option value={45}>45 Minutes</option>
+                          <option value={60}>60 Minutes</option>
+                          <option value={90}>90 Minutes</option>
+                          <option value={120}>120 Minutes</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          Meeting Platform
+                        </label>
+                        <Input
+                          value={demoMeetingPlatform}
+                          onChange={(e) => setDemoMeetingPlatform(e.target.value)}
+                          placeholder="e.g. Google Meet, Zoom, MS Teams"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          Max Requests Per Slot
+                        </label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={demoMaxRequestsPerSlot}
+                          onChange={(e) => setDemoMaxRequestsPerSlot(Number(e.target.value))}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800">
+                      <p className="text-xs text-slate-500">
+                        Course ID: <span className="font-semibold text-slate-700 dark:text-slate-300">{courseId}</span>
+                      </p>
+                      <Button
+                        type="submit"
+                        disabled={isDemoSaving}
+                        className="bg-teal-600 hover:bg-teal-700 text-white text-xs flex items-center gap-2"
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        {isDemoSaving ? 'Saving Settings...' : 'Save Demo Settings'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </DashboardSection>
+            </form>
+          )}
+
+          {/* 3W: WhatsApp Admissions Routing */}
+          {activeStep3Tab === 'whatsapp' && (
+            <form onSubmit={handleSaveWhatsAppRouting} className="space-y-6">
+              <DashboardSection
+                title="WhatsApp Admissions Routing"
+                subtitle="Direct inbound student enquiries from this course landing page to the right admissions counsellor or department phone line."
+              >
+                {isWaLoading ? (
+                  <div className="py-12 text-center text-xs text-slate-500">
+                    Loading WhatsApp lines...
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Routing Mode Selection Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Option 1: Inherit Default */}
+                      <label
+                        className={`relative p-4 rounded-xl border cursor-pointer transition-all ${waRoutingMode === 'default'
+                          ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 ring-2 ring-emerald-500/20'
+                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300'
+                          }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="radio"
+                            name="waRoutingMode"
+                            value="default"
+                            checked={waRoutingMode === 'default'}
+                            onChange={() => setWaRoutingMode('default')}
+                            className="mt-1 h-4 w-4 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          <div>
+                            <span className="block text-xs font-bold text-slate-900 dark:text-slate-100">
+                              Inherit Global Default
+                            </span>
+                            <span className="block text-[11px] text-slate-500 mt-0.5">
+                              Recommended. Uses the central default admissions line designated in WhatsApp Desk.
+                            </span>
+                            {waContactsList.find(c => c.is_default) && (
+                              <div className="mt-2 text-[11px] font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-100/60 dark:bg-emerald-950/60 px-2 py-0.5 rounded">
+                                Active: {waContactsList.find(c => c.is_default)?.display_name} (+{waContactsList.find(c => c.is_default)?.normalized_phone})
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </label>
+
+                      {/* Option 2: Specific Desk */}
+                      <label
+                        className={`relative p-4 rounded-xl border cursor-pointer transition-all ${waRoutingMode === 'custom'
+                          ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 ring-2 ring-emerald-500/20'
+                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300'
+                          }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="radio"
+                            name="waRoutingMode"
+                            value="custom"
+                            checked={waRoutingMode === 'custom'}
+                            onChange={() => setWaRoutingMode('custom')}
+                            className="mt-1 h-4 w-4 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          <div>
+                            <span className="block text-xs font-bold text-slate-900 dark:text-slate-100">
+                              Assign Specific Line
+                            </span>
+                            <span className="block text-[11px] text-slate-500 mt-0.5">
+                              Route this course exclusively to a dedicated counsellor or department line.
+                            </span>
+                          </div>
+                        </div>
+                      </label>
+
+                      {/* Option 3: Disabled */}
+                      <label
+                        className={`relative p-4 rounded-xl border cursor-pointer transition-all ${waRoutingMode === 'disabled'
+                          ? 'border-red-500 bg-red-50/50 dark:bg-red-950/20 ring-2 ring-red-500/20'
+                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300'
+                          }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="radio"
+                            name="waRoutingMode"
+                            value="disabled"
+                            checked={waRoutingMode === 'disabled'}
+                            onChange={() => setWaRoutingMode('disabled')}
+                            className="mt-1 h-4 w-4 text-red-600 focus:ring-red-500"
+                          />
+                          <div>
+                            <span className="block text-xs font-bold text-slate-900 dark:text-slate-100">
+                              Disable WhatsApp
+                            </span>
+                            <span className="block text-[11px] text-slate-500 mt-0.5">
+                              Completely hide the WhatsApp CTA button from this course landing page.
+                            </span>
+                          </div>
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Specific Line Dropdown if mode is custom */}
+                    {waRoutingMode === 'custom' && (
+                      <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 space-y-2">
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                          Select Designated WhatsApp Line *
+                        </label>
+                        <select
+                          value={waSelectedContactId || ''}
+                          onChange={(e) => setWaSelectedContactId(e.target.value ? Number(e.target.value) : null)}
+                          className="w-full max-w-lg px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                        >
+                          <option value="">-- Choose an active phone line --</option>
+                          {waContactsList.map((contact) => (
+                            <option key={contact.id} value={contact.id} disabled={!contact.is_active}>
+                              {contact.display_name} ({contact.department}) - +{contact.normalized_phone} {!contact.is_active ? '(Inactive)' : ''} {contact.is_default ? '★ (Global Default)' : ''}
+                            </option>
+                          ))}
+                        </select>
+                        {waContactsList.length === 0 && (
+                          <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                            No WhatsApp lines found. Please create one in the WhatsApp Desk first.
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Link to Desk Management */}
+                    <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100 dark:border-slate-800">
+                      <span>Need to register new numbers or change global default line?</span>
+                      <Link
+                        href="/admin/whatsapp"
+                        target="_blank"
+                        className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-semibold"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        Open WhatsApp Desk
+                        <ExternalLink className="w-3 h-3" />
+                      </Link>
+                    </div>
+
+                    {/* Action Save Button */}
+                    <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-slate-800">
+                      <Button
+                        type="submit"
+                        disabled={isWaSaving}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs flex items-center gap-2"
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        {isWaSaving ? 'Saving Routing...' : 'Save WhatsApp Routing'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </DashboardSection>
+            </form>
+          )}
+
+          {/* 3C: Course Points & Highlights */}
           {activeStep3Tab === 'points' && (
             <div className="space-y-6">
               <DashboardSection
@@ -1663,21 +2165,20 @@ export default function CourseEditorPage() {
                       type="button"
                       key={f}
                       onClick={() => setPointTypeFilter(f)}
-                      className={`text-[11px] px-2.5 py-1 rounded-md transition-colors ${
-                        pointTypeFilter === f
-                          ? 'bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                      }`}
+                      className={`text-[11px] px-2.5 py-1 rounded-md transition-colors ${pointTypeFilter === f
+                        ? 'bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                        }`}
                     >
                       {f === 'all'
                         ? 'All'
                         : f === 'learn'
-                        ? 'Learn'
-                        : f === 'tool'
-                        ? 'Tools'
-                        : f === 'prerequisite'
-                        ? 'Prerequisites'
-                        : 'Required Skills'}
+                          ? 'Learn'
+                          : f === 'tool'
+                            ? 'Tools'
+                            : f === 'prerequisite'
+                              ? 'Prerequisites'
+                              : 'Required Skills'}
                     </button>
                   ))}
                 </div>
@@ -3284,8 +3785,8 @@ export default function CourseEditorPage() {
                             b.status === 'open'
                               ? 'success'
                               : b.status === 'full'
-                              ? 'warning'
-                              : 'default'
+                                ? 'warning'
+                                : 'default'
                           }
                         >
                           {b.status.toUpperCase()}

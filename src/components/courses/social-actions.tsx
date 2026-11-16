@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import apiClient from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
 import { Share2, Check, MessageCircle } from 'lucide-react';
+import type { CourseWhatsAppInfo } from '@/types/whatsapp';
 
 interface ShareButtonProps {
   courseId: number;
@@ -68,50 +69,36 @@ interface WhatsAppEnquiryButtonProps {
   courseId: number;
   courseTitle: string;
   className?: string;
+  whatsapp?: CourseWhatsAppInfo;
 }
 
 export function WhatsAppEnquiryButton({
   courseId,
-  courseTitle,
+  courseTitle: _courseTitle,
   className,
+  whatsapp,
 }: WhatsAppEnquiryButtonProps) {
-  const [showConfigNotice, setShowConfigNotice] = useState<boolean>(false);
-  const rawPhone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.trim();
-  const phone = rawPhone ? rawPhone.replace(/[^0-9]/g, '') : null;
+  // If WhatsApp is disabled or no active contact exists, render nothing
+  if (!whatsapp?.available || !whatsapp.click_to_chat_url) {
+    return null;
+  }
 
   const handleWhatsAppClick = () => {
     // Silent telemetry
     apiClient.post(API_ENDPOINTS.analytics.enquiryClick(courseId)).catch(() => {});
-
-    if (!phone) {
-      setShowConfigNotice(true);
-      return;
-    }
-
-    const message = encodeURIComponent(
-      `Hello, I would like more information and batch details about the course: "${courseTitle}".`
-    );
-    window.open(`https://wa.me/${phone}?text=${message}`, '_blank', 'noopener,noreferrer');
+    window.open(whatsapp.click_to_chat_url, '_blank', 'noopener,noreferrer');
   };
 
   return (
-    <div className="w-full space-y-1.5">
-      <Button
-        variant="outline"
-        size="lg"
-        onClick={handleWhatsAppClick}
-        className={`w-full border-emerald-500/40 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40 gap-2 font-semibold ${className || ''}`}
-        aria-label="Enquire on WhatsApp"
-      >
-        <MessageCircle className="w-4 h-4 fill-emerald-600/20 text-emerald-600" />
-        <span>Chat on WhatsApp</span>
-      </Button>
-
-      {showConfigNotice && !phone && (
-        <p className="text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 p-2 rounded-lg border border-amber-200 dark:border-amber-800 text-center leading-snug">
-          Official WhatsApp admissions line is pending configuration. Please use the Book Demo session button.
-        </p>
-      )}
-    </div>
+    <Button
+      variant="outline"
+      size="lg"
+      onClick={handleWhatsAppClick}
+      className={`w-full border-emerald-500/40 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40 gap-2 font-semibold ${className || ''}`}
+      aria-label="Enquire on WhatsApp"
+    >
+      <MessageCircle className="w-4 h-4 fill-emerald-600/20 text-emerald-600" />
+      <span>Chat on WhatsApp</span>
+    </Button>
   );
 }

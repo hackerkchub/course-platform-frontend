@@ -2,9 +2,10 @@ import { cookies } from 'next/headers';
 import { ApiResponse } from '@/types/api';
 
 const backendUrl = (
+  process.env.BACKEND_URL ||
   process.env.INTERNAL_BACKEND_URL ||
   process.env.NEXT_PUBLIC_API_BASE_URL ||
-  'https://api.softmaxs.com'
+  'https://api.guidexa.in'
 )
   .trim()
   .replace(/\/+$/, '')

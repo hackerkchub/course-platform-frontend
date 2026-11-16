@@ -24,6 +24,42 @@ export interface Instructor {
   created_at?: string;
   updated_at?: string;
   course_count?: number;
+  user_id?: number | null;
+  email?: string | null;
+  user_status?: 'active' | 'blocked' | null;
+  google_id_linked?: boolean;
+  assigned_courses_count?: number;
+  assigned_batches_count?: number;
+}
+
+export interface ProvisionInstructorPayload {
+  instructor_id?: number;
+  email?: string;
+  name?: string;
+  phone?: string;
+  password?: string;
+  designation?: string | null;
+}
+
+export interface AssignCourseInstructorPayload {
+  instructor_id: number;
+  is_primary?: boolean | number;
+  can_manage_curriculum?: boolean | number;
+}
+
+export interface CourseInstructorAssignment {
+  id: number;
+  course_id: number;
+  instructor_id: number;
+  is_primary: boolean;
+  can_manage_curriculum: boolean;
+  created_at?: string;
+  name: string;
+  designation?: string | null;
+  email?: string;
+  instructor_status?: string;
+  user_status?: string;
+  google_id_linked?: boolean;
 }
 
 export interface CreateInstructorPayload {

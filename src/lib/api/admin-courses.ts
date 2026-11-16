@@ -25,6 +25,8 @@ import type {
   CreateInstallmentPayload,
   CourseOfferItem,
   CreateOfferPayload,
+  AdminDemoSettings,
+  UpdateDemoSettingsPayload,
 } from '@/types/admin-course';
 import type { ApiResponse } from '@/types/api';
 
@@ -474,4 +476,33 @@ export const adminCoursesApi = {
       throw new Error(res.data.message || 'Failed to delete promotional offer');
     }
   },
+
+  // ============================================================================
+  // Demo Class Settings
+  // ============================================================================
+
+  async getDemoSettings(courseId: number): Promise<AdminDemoSettings> {
+    const res = await apiClient.get<ApiResponse<AdminDemoSettings>>(
+      API_ENDPOINTS.demo.adminSettings(courseId)
+    );
+    if (!res.data.success || !res.data.data) {
+      throw new Error(res.data.message || 'Failed to fetch demo settings');
+    }
+    return res.data.data;
+  },
+
+  async updateDemoSettings(
+    courseId: number,
+    payload: UpdateDemoSettingsPayload
+  ): Promise<AdminDemoSettings> {
+    const res = await apiClient.put<ApiResponse<AdminDemoSettings>>(
+      API_ENDPOINTS.demo.adminSettings(courseId),
+      payload
+    );
+    if (!res.data.success || !res.data.data) {
+      throw new Error(res.data.message || 'Failed to update demo settings');
+    }
+    return res.data.data;
+  },
 };
+

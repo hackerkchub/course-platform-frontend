@@ -1,10 +1,41 @@
 import type { ComponentType } from 'react';
 import type { UserProfile } from '@/types/auth';
 
+export type DashboardIconName =
+  | 'GraduationCap'
+  | 'Headphones'
+  | 'ShieldAlert'
+  | 'LayoutDashboard'
+  | 'BookOpen'
+  | 'Heart'
+  | 'Calendar'
+  | 'Award'
+  | 'Star'
+  | 'User'
+  | 'Inbox'
+  | 'FileCheck'
+  | 'FolderTree'
+  | 'Users'
+  | 'UserCheck'
+  | 'FileCheck2'
+  | 'MessageSquare'
+  | 'Image'
+  | 'Activity'
+  | 'ClipboardCheck'
+  | 'Clock'
+  | 'FileText'
+  | 'Layers'
+  | 'Settings'
+  | 'Mail'
+  | 'Bell'
+  | 'CalendarCheck'
+  | 'MessageCircle'
+  | 'UserPlus';
+
 export interface DashboardNavItem {
   label: string;
   href: string;
-  icon: ComponentType<{ className?: string }>;
+  icon: DashboardIconName;
   badge?: string | number;
   exact?: boolean;
 }
@@ -12,7 +43,7 @@ export interface DashboardNavItem {
 export interface DashboardNavConfig {
   title: string;
   brandHref: string;
-  brandIcon: ComponentType<{ className?: string }>;
+  brandIcon: DashboardIconName;
   roleBadge: string;
   roleBadgeVariant?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'destructive' | 'outline' | 'accent';
   items: DashboardNavItem[];

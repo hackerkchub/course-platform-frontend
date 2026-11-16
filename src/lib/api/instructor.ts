@@ -197,6 +197,83 @@ export async function uploadInstructorPhoto(file: File): Promise<string> {
 }
 
 /**
+ * Admin: Provision login identity and link to instructor profile
+ */
+export async function provisionAdminInstructor(
+  payload: { instructor_id?: number; email?: string; name?: string; password?: string; phone?: string; designation?: string | null }
+): Promise<Instructor> {
+  const res = await apiClient.post(API_ENDPOINTS.instructors.adminProvision, payload);
+  return (res?.data?.data || res?.data) as Instructor;
+}
+
+/**
+ * Admin: Update instructor profile and synchronized user status
+ */
+export async function updateInstructorAccountStatus(
+  id: number,
+  status: 'active' | 'inactive'
+): Promise<Instructor> {
+  const res = await apiClient.patch(API_ENDPOINTS.instructors.adminStatus(id), { status });
+  return (res?.data?.data || res?.data) as Instructor;
+}
+
+/**
+ * Admin: Fetch assigned instructors for a course
+ */
+export async function fetchCourseInstructors(courseId: number): Promise<any[]> {
+  const res = await apiClient.get(API_ENDPOINTS.instructors.adminCourseInstructors(courseId));
+  return (res?.data?.data || res?.data || []) as any[];
+}
+
+/**
+ * Admin: Assign instructor to course (primary or secondary)
+ */
+export async function assignInstructorToCourse(
+  courseId: number,
+  payload: { instructor_id: number; is_primary?: boolean | number; can_manage_curriculum?: boolean | number }
+): Promise<any> {
+  const res = await apiClient.post(API_ENDPOINTS.instructors.adminAssignCourse(courseId), payload);
+  return res?.data?.data || res?.data;
+}
+
+/**
+ * Admin: Reassign primary instructor for course
+ */
+export async function reassignPrimaryInstructor(
+  courseId: number,
+  instructorId: number
+): Promise<any> {
+  const res = await apiClient.post(API_ENDPOINTS.instructors.adminReassignPrimary(courseId), {
+    instructor_id: instructorId,
+  });
+  return res?.data?.data || res?.data;
+}
+
+/**
+ * Admin: Remove instructor assignment from course
+ */
+export async function removeInstructorFromCourse(
+  courseId: number,
+  instructorId: number
+): Promise<any> {
+  const res = await apiClient.delete(API_ENDPOINTS.instructors.adminRemoveCourseInstructor(courseId, instructorId));
+  return res?.data;
+}
+
+/**
+ * Admin: Assign instructor to batch
+ */
+export async function assignInstructorToBatch(
+  batchId: number,
+  instructorId: number
+): Promise<any> {
+  const res = await apiClient.post(API_ENDPOINTS.instructors.adminAssignBatch(batchId), {
+    instructor_id: instructorId,
+  });
+  return res?.data?.data || res?.data;
+}
+
+/**
  * Unified instructorApi object preserving backwards compatibility for object-style callers
  */
 export const instructorApi = {
@@ -209,6 +286,13 @@ export const instructorApi = {
   deactivateAdminInstructor: deactivateAdminInstructor,
   activateAdminInstructor: activateAdminInstructor,
   uploadPhoto: uploadInstructorPhoto,
+  provisionInstructor: provisionAdminInstructor,
+  updateStatus: updateInstructorAccountStatus,
+  getCourseInstructors: fetchCourseInstructors,
+  assignCourseInstructor: assignInstructorToCourse,
+  reassignPrimaryInstructor,
+  removeCourseInstructor: removeInstructorFromCourse,
+  assignBatchInstructor: assignInstructorToBatch,
 };
 
 export default instructorApi;

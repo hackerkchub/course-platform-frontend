@@ -1,3 +1,5 @@
+import type { CourseWhatsAppInfo } from './whatsapp';
+
 export type CourseLevel = 'beginner' | 'intermediate' | 'advanced' | 'all_levels';
 export type CourseMode = 'online' | 'offline' | 'hybrid' | 'self_paced';
 export type CourseStatus = 'draft' | 'published' | 'archived';
@@ -287,6 +289,7 @@ export interface CourseDetailPayload {
     robots_directive?: string | null;
     schema_type?: string | null;
   };
+  whatsapp?: CourseWhatsAppInfo;
   user_state: {
     is_wishlisted: boolean;
     is_enrolled: boolean;

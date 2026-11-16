@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { resolveDashboardIcon } from './icons';
 import type { DashboardNavItem } from '@/types/dashboard';
 
 export interface DashboardNavLinksProps {
@@ -22,7 +23,7 @@ export function DashboardNavLinks({
   return (
     <nav className={cn('space-y-1', className)} aria-label="Dashboard navigation">
       {items.map(item => {
-        const Icon = item.icon;
+        const Icon = resolveDashboardIcon(item.icon);
         const isRootDashboard =
           item.href === '/admin/dashboard' ||
           item.href === '/student/dashboard' ||

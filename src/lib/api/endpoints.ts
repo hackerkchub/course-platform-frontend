@@ -51,6 +51,23 @@ export const API_ENDPOINTS = {
     adminUpdate: (id: number) => `/api/admin/instructors/${id}`,
     adminDelete: (id: number) => `/api/admin/instructors/${id}`,
     adminUpload: '/api/admin/uploads',
+    adminProvision: '/api/admin/instructors/provision',
+    adminStatus: (id: number) => `/api/admin/instructors/${id}/status`,
+    adminCourseInstructors: (courseId: number) => `/api/admin/instructors/courses/${courseId}`,
+    adminAssignCourse: (courseId: number) => `/api/admin/instructors/courses/${courseId}`,
+    adminReassignPrimary: (courseId: number) => `/api/admin/instructors/courses/${courseId}/primary`,
+    adminUpdateCourseInstructor: (courseId: number, instructorId: number) => `/api/admin/instructors/courses/${courseId}/${instructorId}`,
+    adminRemoveCourseInstructor: (courseId: number, instructorId: number) => `/api/admin/instructors/courses/${courseId}/${instructorId}`,
+    adminAssignBatch: (batchId: number) => `/api/admin/instructors/batches/${batchId}`,
+  },
+
+  // 5b. Staff & Counsellor Management (5)
+  counsellors: {
+    adminList: '/api/admin/users/counsellors',
+    adminProvision: '/api/admin/users/counsellors',
+    adminById: (id: number) => `/api/admin/users/counsellors/${id}`,
+    adminStatus: (id: number) => `/api/admin/users/counsellors/${id}/status`,
+    adminPromote: '/api/admin/users/counsellors/promote',
   },
 
   // 6. Courses & Catalog (10)
@@ -182,5 +199,62 @@ export const API_ENDPOINTS = {
     adminCourseAnalytics: (id: number) => `/api/admin/courses/${id}/analytics`,
     adminTopCourses: '/api/admin/analytics/courses',
     adminDashboard: '/api/admin/dashboard',
+  },
+
+  // 18. Instructor Portal (21)
+  instructorPortal: {
+    overview: '/api/instructor/overview',
+    courses: '/api/instructor/courses',
+    courseDetails: (courseId: number) => `/api/instructor/courses/${courseId}`,
+    createModule: (courseId: number) => `/api/instructor/courses/${courseId}/modules`,
+    updateModule: (moduleId: number) => `/api/instructor/modules/${moduleId}`,
+    deleteModule: (moduleId: number) => `/api/instructor/modules/${moduleId}`,
+    createLesson: (moduleId: number) => `/api/instructor/modules/${moduleId}/lessons`,
+    updateLesson: (lessonId: number) => `/api/instructor/lessons/${lessonId}`,
+    deleteLesson: (lessonId: number) => `/api/instructor/lessons/${lessonId}`,
+    batches: '/api/instructor/batches',
+    students: '/api/instructor/students',
+    demos: '/api/instructor/demos',
+    updateDemo: (demoId: number) => `/api/instructor/demos/${demoId}`,
+    sessions: '/api/instructor/sessions',
+    createSession: '/api/instructor/sessions',
+    updateSession: (sessionId: number) => `/api/instructor/sessions/${sessionId}`,
+    sessionAttendance: (sessionId: number) => `/api/instructor/sessions/${sessionId}/attendance`,
+    saveAttendance: (sessionId: number) => `/api/instructor/sessions/${sessionId}/attendance`,
+    materials: '/api/instructor/materials',
+    createMaterial: '/api/instructor/materials',
+    deleteMaterial: (materialId: number) => `/api/instructor/materials/${materialId}`,
+    profile: '/api/instructor/profile',
+    updateProfile: '/api/instructor/profile',
+  },
+
+  // 19. Contact Queries (5)
+  contact: {
+    submit: '/api/contact',
+    adminList: '/api/admin/contacts',
+    adminById: (id: number) => `/api/admin/contacts/${id}`,
+    adminStatus: (id: number) => `/api/admin/contacts/${id}/status`,
+    adminAssign: (id: number) => `/api/admin/contacts/${id}/assign`,
+  },
+
+  // 20. Centralized Notifications & Consent (5)
+  notifications: {
+    whatsappConsent: '/api/notifications/whatsapp/consent',
+    adminSettings: '/api/admin/notifications/settings',
+    adminUpdateSetting: (eventType: string) => `/api/admin/notifications/settings/${eventType}`,
+    adminLogs: '/api/admin/notifications/logs',
+    adminRetry: (id: number) => `/api/admin/notifications/logs/${id}/retry`,
+  },
+
+  // 21. WhatsApp Desk & Number Management (8)
+  whatsapp: {
+    adminList: '/api/admin/whatsapp',
+    adminCreate: '/api/admin/whatsapp',
+    adminById: (id: number) => `/api/admin/whatsapp/${id}`,
+    adminUpdate: (id: number) => `/api/admin/whatsapp/${id}`,
+    adminSetDefault: (id: number) => `/api/admin/whatsapp/${id}/set-default`,
+    adminStatus: (id: number) => `/api/admin/whatsapp/${id}/status`,
+    adminDelete: (id: number) => `/api/admin/whatsapp/${id}`,
+    adminPreview: (id: number) => `/api/admin/whatsapp/${id}/preview`,
   },
 } as const;

@@ -3,17 +3,18 @@ import { API_ENDPOINTS } from './endpoints';
 
 /**
  * In browser environments, use same-origin relative URLs ('') so requests route through
- * Next.js rewrite proxy (/api/* -> https://api.softmaxs.com/api/*).
+ * Next.js rewrite proxy (/api/* -> BACKEND_URL/api/*).
  * This ensures cookies (SameSite=Lax) are set and sent as first-party cookies without cross-origin rejection.
- * On server-side / build-time, use the direct backend URL.
+ * On server-side / build-time, use the canonical BACKEND_URL.
  */
 export const apiBaseUrl =
   typeof window !== 'undefined'
     ? ''
     : (
+        process.env.BACKEND_URL ||
         process.env.INTERNAL_BACKEND_URL ||
         process.env.NEXT_PUBLIC_API_BASE_URL ||
-        'https://api.softmaxs.com'
+        'https://api.guidexa.in'
       )
         .trim()
         .replace(/\/+$/, '')

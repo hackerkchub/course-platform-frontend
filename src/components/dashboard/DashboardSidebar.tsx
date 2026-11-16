@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { DashboardNavLinks } from './DashboardNavLinks';
+import { resolveDashboardIcon } from './icons';
 import type { DashboardNavConfig } from '@/types/dashboard';
 import type { UserProfile } from '@/types/auth';
 
@@ -17,7 +18,7 @@ export function DashboardSidebar({
   user,
   navConfig,
 }: DashboardSidebarProps) {
-  const BrandIcon = navConfig.brandIcon;
+  const BrandIcon = resolveDashboardIcon(navConfig.brandIcon);
 
   return (
     <aside

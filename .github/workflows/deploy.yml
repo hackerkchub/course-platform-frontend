@@ -1,0 +1,79 @@
+name: Deploy Guidexa Frontend (Next.js 15)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: guidexa-frontend-deploy
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy Frontend (Plain FTP)
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js 20 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Validate TypeScript & Code Quality
+        run: |
+          npx tsc -p tsconfig.json --noEmit
+          npm run lint
+
+      - name: Build Next.js Standalone Bundle
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_SITE_URL: "https://guidexa.in"
+          BACKEND_URL: "https://api.guidexa.in"
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
+        run: npx next build
+
+      - name: Prepare Standalone Deployment Package
+        run: |
+          # Copy static and public assets required by Next.js standalone runtime
+          cp -r public .next/standalone/public
+          mkdir -p .next/standalone/.next
+          cp -r .next/static .next/standalone/.next/static
+
+          # Create LiteSpeed / Phusion Passenger restart trigger
+          mkdir -p .next/standalone/tmp
+          echo "deploy-${{ github.sha }}-$(date +%s)" > .next/standalone/tmp/restart.txt
+
+      - name: Sync Frontend via Plain FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          local-dir: .next/standalone/
+          server-dir: ${{ secrets.FTP_FRONTEND_DIR }}
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.github/**
+            **/.env*
+            **/.htaccess
+            **/.ftp-deploy-sync-state.json
+            logs/**
+            **/*.log

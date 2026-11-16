@@ -9,4 +9,5 @@ export * from './DashboardSection';
 export * from './DataTable';
 export * from './SearchFilterToolbar';
 export * from './LeadDetailsDrawer';
+export * from './icons';
 export * from '@/types/dashboard';

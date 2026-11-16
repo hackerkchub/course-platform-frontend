@@ -13,6 +13,7 @@ import {
   ExternalLink,
   Briefcase,
   Globe,
+  UserPlus,
 } from 'lucide-react';
 import {
   DashboardHeading,
@@ -34,6 +35,7 @@ import {
   fetchAdminInstructors,
   deactivateAdminInstructor,
   activateAdminInstructor,
+  provisionAdminInstructor,
 } from '@/lib/api/instructor';
 import type { Instructor } from '@/types/instructor';
 import { formatDateKolkata, getErrorMessage } from '@/lib/utils';
@@ -65,6 +67,14 @@ export default function AdminInstructorsPage() {
   const [instructorToToggle, setInstructorToToggle] = useState<Instructor | null>(null);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
   const [actionSuccessMessage, setActionSuccessMessage] = useState<string | null>(null);
+
+  // Provisioning State
+  const [provisionModalOpen, setProvisionModalOpen] = useState(false);
+  const [instructorToProvision, setInstructorToProvision] = useState<Instructor | null>(null);
+  const [provisionEmail, setProvisionEmail] = useState('');
+  const [provisionPassword, setProvisionPassword] = useState('');
+  const [provisionPhone, setProvisionPhone] = useState('');
+  const [isProvisioning, setIsProvisioning] = useState(false);
 
   // Debounce search input (300ms)
   useEffect(() => {
@@ -163,6 +173,35 @@ export default function AdminInstructorsPage() {
     }
   };
 
+  const handleOpenProvisionModal = (inst: Instructor) => {
+    setInstructorToProvision(inst);
+    setProvisionEmail(inst.email || '');
+    setProvisionPassword('');
+    setProvisionPhone('');
+    setProvisionModalOpen(true);
+  };
+
+  const handleConfirmProvision = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!instructorToProvision) return;
+    try {
+      setIsProvisioning(true);
+      await provisionAdminInstructor({
+        instructor_id: instructorToProvision.id,
+        email: provisionEmail.trim() || undefined,
+        password: provisionPassword || undefined,
+        phone: provisionPhone.trim() || undefined,
+      });
+      setProvisionModalOpen(false);
+      setActionSuccessMessage(`Login identity successfully provisioned for ${instructorToProvision.name}`);
+      await loadInstructors();
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, 'Failed to provision instructor identity'));
+    } finally {
+      setIsProvisioning(false);
+    }
+  };
+
   // Table Column Definitions
   const columns: DataTableColumn<Instructor>[] = useMemo(
     () => [
@@ -221,6 +260,33 @@ export default function AdminInstructorsPage() {
           >
             {row.status}
           </Badge>
+        ),
+      },
+      {
+        id: 'account',
+        header: 'User Account & Assignments',
+        cell: ({ row }) => (
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5">
+              {row.user_id ? (
+                <Badge variant={row.user_status === 'blocked' ? 'destructive' : 'success'} className="text-[10px]">
+                  {row.user_status === 'blocked' ? 'Blocked' : `User #${row.user_id}`}
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300">
+                  Unprovisioned
+                </Badge>
+              )}
+              {row.google_id_linked && (
+                <span className="text-[10px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300 font-mono">
+                  OAuth
+                </span>
+              )}
+            </div>
+            <div className="text-[11px] text-slate-500">
+              {row.assigned_courses_count || 0} Courses • {row.assigned_batches_count || 0} Batches
+            </div>
+          </div>
         ),
       },
       {
@@ -310,6 +376,18 @@ export default function AdminInstructorsPage() {
             >
               <ExternalLink className="w-4 h-4" />
             </Link>
+
+            {!row.user_id && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleOpenProvisionModal(row)}
+                className="p-2 h-auto text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                title="Provision Login Identity"
+              >
+                <UserPlus className="w-4 h-4" />
+              </Button>
+            )}
 
             <Button
               variant="ghost"
@@ -541,6 +619,73 @@ export default function AdminInstructorsPage() {
         }
         variant={instructorToToggle?.status === 'active' ? 'danger' : 'default'}
       />
+
+      {/* Provision Instructor Login Modal */}
+      {provisionModalOpen && instructorToProvision && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-card p-6 shadow-2xl space-y-4">
+            <h3 className="text-lg font-bold text-foreground">Provision Instructor Account</h3>
+            <p className="text-xs text-muted-foreground">
+              Create an authentication account for <strong>{instructorToProvision.name}</strong> to grant instructor portal access.
+            </p>
+
+            <form onSubmit={handleConfirmProvision} className="space-y-3 pt-2">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Login Email</label>
+                <input
+                  type="email"
+                  required
+                  value={provisionEmail}
+                  onChange={(e) => setProvisionEmail(e.target.value)}
+                  placeholder="instructor@example.com"
+                  className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Initial Password</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={provisionPassword}
+                  onChange={(e) => setProvisionPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Phone Number (optional)</label>
+                <input
+                  type="tel"
+                  value={provisionPhone}
+                  onChange={(e) => setProvisionPhone(e.target.value)}
+                  placeholder="+919876543210"
+                  className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setProvisionModalOpen(false)}
+                  className="rounded-md border px-4 py-2 text-sm text-muted-foreground hover:bg-muted"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isProvisioning}
+                  className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {isProvisioning ? 'Provisioning...' : 'Provision Login'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

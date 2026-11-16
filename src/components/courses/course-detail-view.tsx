@@ -59,6 +59,7 @@ export function CourseDetailView({ course, relatedCourses = [] }: CourseDetailVi
   const offerPrice = pricing.offer_price;
   const hasOffer = offerPrice !== null && offerPrice !== undefined && offerPrice < pricing.price && !isFree;
   const currentPrice = hasOffer ? offerPrice : pricing.price;
+  const isDemoAvailable = Boolean(course.demo?.demo_enabled && course.demo?.demo_request_enabled);
 
   const toggleModule = (id: number) => {
     setOpenModuleIds((prev) =>
@@ -273,7 +274,7 @@ export function CourseDetailView({ course, relatedCourses = [] }: CourseDetailVi
                       courseSlug={basic.slug}
                       isAlreadyEnrolled={course.user_state?.is_enrolled}
                     />
-                  ) : (
+                  ) : isDemoAvailable ? (
                     <Button
                       variant="primary"
                       size="lg"
@@ -282,6 +283,16 @@ export function CourseDetailView({ course, relatedCourses = [] }: CourseDetailVi
                     >
                       <Video className="w-5 h-5" />
                       Book Free Demo Class
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      onClick={() => router.push(`/contact?course=${basic.slug}`)}
+                      className="w-full font-bold shadow-lg shadow-blue-500/25 gap-2 text-base"
+                    >
+                      <HelpCircle className="w-5 h-5" />
+                      Enquire About Course
                     </Button>
                   )}
 
@@ -304,6 +315,7 @@ export function CourseDetailView({ course, relatedCourses = [] }: CourseDetailVi
                   <WhatsAppEnquiryButton
                     courseId={basic.id}
                     courseTitle={basic.course_name}
+                    whatsapp={course.whatsapp}
                   />
                 </div>
 
@@ -686,13 +698,21 @@ export function CourseDetailView({ course, relatedCourses = [] }: CourseDetailVi
                 isAlreadyEnrolled={course.user_state?.is_enrolled}
               />
             </div>
-          ) : (
+          ) : isDemoAvailable ? (
             <Button
               variant="primary"
               onClick={handleOpenDemoModal}
               className="w-1/2 font-bold"
             >
               Book Demo
+            </Button>
+          ) : (
+            <Button
+              variant="primary"
+              onClick={() => router.push(`/contact?course=${basic.slug}`)}
+              className="w-1/2 font-bold"
+            >
+              Enquire Now
             </Button>
           )}
         </div>
