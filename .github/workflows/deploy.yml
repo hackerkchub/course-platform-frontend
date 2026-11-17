@@ -15,7 +15,7 @@ jobs:
     name: Build & Deploy Frontend (Plain FTP)
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 150
 
     steps:
       - name: Checkout Source Code
