@@ -67,7 +67,7 @@ export function Header() {
             <GraduationCap className="w-5 h-5 text-white" />
           </div>
           <span className="font-extrabold text-lg sm:text-xl tracking-tight text-white">
-            Course<span className="text-blue-500">Platform</span>
+            Guid<span className="text-blue-500">exa</span>
           </span>
         </Link>
 

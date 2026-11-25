@@ -28,15 +28,15 @@ export async function generateMetadata({
     const course = res?.data as unknown as CourseDetailPayload;
     if (!course || !course.basic) {
       return {
-        title: 'Course Not Found | Course Platform',
+        title: 'Course Not Found | Guidexa',
       };
     }
 
-    const title = course.seo?.seo_title || `${course.basic.course_name} | Live Cohort Mastery`;
+    const title = course.seo?.seo_title || `${course.basic.course_name} | Guidexa`;
     const description =
       course.seo?.seo_description ||
       course.basic.short_description ||
-      'Master modern software engineering with verified curriculum and veteran mentorship.';
+      'Master modern software engineering with verified curriculum and veteran mentorship on Guidexa.';
     const ogImage = course.seo?.og_image_url || course.media?.thumbnail_url || `${siteUrl}/images/og-default.jpg`;
     const canonical = `${siteUrl}/courses/${slug}`;
 
@@ -50,7 +50,7 @@ export async function generateMetadata({
         title,
         description,
         url: canonical,
-        siteName: 'Course Platform',
+        siteName: 'Guidexa',
         images: [
           {
             url: ogImage,
@@ -70,7 +70,7 @@ export async function generateMetadata({
     };
   } catch {
     return {
-      title: 'Course Platform',
+      title: 'Guidexa — Engineering Courses & Cohorts',
     };
   }
 }
@@ -135,7 +135,7 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
     description: course.basic.short_description || course.basic.description,
     provider: {
       '@type': 'Organization',
-      name: 'Course Platform',
+      name: 'Guidexa',
       url: siteUrl,
     },
     offers: {

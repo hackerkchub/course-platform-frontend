@@ -9,14 +9,16 @@ import {
   DataTable,
   SearchFilterToolbar,
   DataTableColumn,
+  LeadDetailsDrawer,
 } from '@/components/dashboard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { Pagination } from '@/components/ui/pagination';
-import { apiClient } from '@/lib/api/client';
-import { API_ENDPOINTS } from '@/lib/api/endpoints';
+import { adminLeadsApi } from '@/lib/api/admin-leads';
 import { formatDateKolkata, getErrorMessage } from '@/lib/utils';
+import { useAuth } from '@/providers/auth-provider';
+import type { DemoLeadItem } from '@/types/admin-lead';
 import {
   Inbox,
   Clock,
@@ -26,28 +28,12 @@ import {
   Phone,
   Mail,
   User,
+  Eye,
+  UserCheck,
+  CheckCircle2,
+  AlertCircle,
+  X,
 } from 'lucide-react';
-
-interface DemoLeadItem {
-  id: number;
-  reference_no: string;
-  course_id: number;
-  course_name: string;
-  student_name: string;
-  email: string;
-  phone: string;
-  city?: string | null;
-  preferred_demo_type?: string | null;
-  preferred_date?: string | null;
-  preferred_time?: string | null;
-  status: 'pending' | 'contacted' | 'scheduled' | 'completed' | 'cancelled' | string;
-  assigned_to?: number | null;
-  assigned_user_name?: string | null;
-  admin_notes?: string | null;
-  scheduled_at?: string | null;
-  follow_up_at?: string | null;
-  created_at: string;
-}
 
 interface DemoRequestsSummary {
   total: number;
@@ -59,6 +45,7 @@ interface DemoRequestsSummary {
 }
 
 export default function CounsellorDashboardPage() {
+  const { user } = useAuth();
   const [leads, setLeads] = useState<DemoLeadItem[]>([]);
   const [summary, setSummary] = useState<DemoRequestsSummary>({
     total: 0,
@@ -78,6 +65,14 @@ export default function CounsellorDashboardPage() {
   const [isError, setIsError] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
+  // Selected lead for drawer
+  const [selectedLeadId, setSelectedLeadId] = useState<number | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
+
+  // Quick action state
+  const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
   const fetchLeads = useCallback(
     async (targetPage = 1, search = '', status = 'all') => {
       setIsLoading(true);
@@ -96,35 +91,25 @@ export default function CounsellorDashboardPage() {
           params.status = status;
         }
 
-        const res = await apiClient.get(API_ENDPOINTS.demo.adminRequests, { params });
-        const payload = res.data;
+        const res = await adminLeadsApi.getLeads(params);
+        setLeads(res.leads);
 
-        if (payload?.success) {
-          const data = payload.data || {};
-          const items: DemoLeadItem[] = data.requests || [];
-          setLeads(Array.isArray(items) ? items : []);
-
-          if (data.summary) {
-            setSummary({
-              total: Number(data.summary.total || 0),
-              pending: Number(data.summary.pending || 0),
-              contacted: Number(data.summary.contacted || 0),
-              scheduled: Number(data.summary.scheduled || 0),
-              completed: Number(data.summary.completed || 0),
-              cancelled: Number(data.summary.cancelled || 0),
-            });
-          }
-
-          const pagination = data.pagination || payload.pagination || {};
-          setTotalCount(Number(pagination.total || items.length));
-          setTotalPages(Number(pagination.total_pages || Math.ceil((pagination.total || 1) / limit) || 1));
-        } else {
-          setIsError(true);
-          setErrorMessage(payload?.message || 'Failed to retrieve demo leads.');
+        if (res.summary) {
+          setSummary({
+            total: Number(res.summary.total || 0),
+            pending: Number(res.summary.pending || 0),
+            contacted: Number(res.summary.contacted || 0),
+            scheduled: Number(res.summary.scheduled || 0),
+            completed: Number(res.summary.completed || 0),
+            cancelled: Number(res.summary.cancelled || 0),
+          });
         }
+
+        setTotalCount(res.pagination.total);
+        setTotalPages(res.pagination.totalPages);
       } catch (err) {
         setIsError(true);
-        setErrorMessage(getErrorMessage(err));
+        setErrorMessage(getErrorMessage(err, 'Failed to retrieve demo leads.'));
       } finally {
         setIsLoading(false);
       }
@@ -150,6 +135,67 @@ export default function CounsellorDashboardPage() {
     setSearchQuery('');
     setStatusFilter('all');
     setPage(1);
+  };
+
+  const handleOpenLead = (lead: DemoLeadItem) => {
+    setSelectedLeadId(lead.id);
+    setIsDrawerOpen(true);
+  };
+
+  const handleCloseDrawer = () => {
+    setIsDrawerOpen(false);
+    setSelectedLeadId(null);
+  };
+
+  const handleAcceptLeadQuick = async (lead: DemoLeadItem, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!user?.id) {
+      setFeedback({ type: 'error', message: 'You must be signed in to accept a lead.' });
+      return;
+    }
+    setActionLoadingId(lead.id);
+    setFeedback(null);
+    try {
+      await adminLeadsApi.updateLead(lead.id, {
+        assigned_to: user.id,
+        status: lead.status === 'pending' ? 'contacted' : lead.status,
+      });
+      setFeedback({
+        type: 'success',
+        message: `Lead #${lead.reference_no || lead.id} accepted and assigned to you.`,
+      });
+      await fetchLeads(page, searchQuery, statusFilter);
+    } catch (err) {
+      setFeedback({
+        type: 'error',
+        message: getErrorMessage(err, 'Failed to accept lead.'),
+      });
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleMarkContactedQuick = async (lead: DemoLeadItem, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setActionLoadingId(lead.id);
+    setFeedback(null);
+    try {
+      await adminLeadsApi.updateLead(lead.id, {
+        status: 'contacted',
+      });
+      setFeedback({
+        type: 'success',
+        message: `Lead #${lead.reference_no || lead.id} marked as Contacted.`,
+      });
+      await fetchLeads(page, searchQuery, statusFilter);
+    } catch (err) {
+      setFeedback({
+        type: 'error',
+        message: getErrorMessage(err, 'Failed to update lead status.'),
+      });
+    } finally {
+      setActionLoadingId(null);
+    }
   };
 
   // Columns definition for leads table
@@ -190,7 +236,7 @@ export default function CounsellorDashboardPage() {
         header: 'Program / Course',
         cell: ({ row }) => (
           <span className="text-sm font-medium text-slate-900 dark:text-white">
-            {row.course_name}
+            {row.course_name || 'Archived / Unknown Course'}
           </span>
         ),
       },
@@ -227,12 +273,23 @@ export default function CounsellorDashboardPage() {
       {
         id: 'counselor',
         header: 'Assigned',
-        cell: ({ row }) => (
-          <span className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400">
-            <User className="w-3 h-3 text-slate-400" />
-            {row.assigned_user_name || 'Unassigned'}
-          </span>
-        ),
+        cell: ({ row }) => {
+          const isAssignedToMe = Number(row.assigned_to) === Number(user?.id);
+          return (
+            <span className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400">
+              <User className="w-3 h-3 text-slate-400" />
+              {isAssignedToMe ? (
+                <span className="font-semibold text-teal-700 dark:text-teal-400">You</span>
+              ) : (
+                row.assigned_user_name || (
+                  <span className="text-amber-600 dark:text-amber-400 italic font-normal">
+                    Unassigned
+                  </span>
+                )
+              )}
+            </span>
+          );
+        },
       },
       {
         id: 'created_at',
@@ -243,8 +300,64 @@ export default function CounsellorDashboardPage() {
           </span>
         ),
       },
+      {
+        id: 'actions',
+        header: 'Actions',
+        align: 'right',
+        cell: ({ row }) => {
+          const isAssignedToMe = Number(row.assigned_to) === Number(user?.id);
+          const isUnassigned = !row.assigned_to;
+          const isActionBusy = actionLoadingId === row.id;
+
+          return (
+            <div
+              className="flex items-center justify-end gap-1.5"
+              onClick={e => e.stopPropagation()}
+            >
+              {isUnassigned && (
+                <Button
+                  size="sm"
+                  variant="primary"
+                  className="h-7 px-2.5 text-xs bg-teal-600 hover:bg-teal-700 text-white flex items-center gap-1"
+                  onClick={e => handleAcceptLeadQuick(row, e)}
+                  disabled={isActionBusy}
+                  title="Accept and assign this lead to yourself"
+                >
+                  <UserCheck className="w-3.5 h-3.5" />
+                  <span>Accept</span>
+                </Button>
+              )}
+
+              {isAssignedToMe && row.status === 'pending' && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-2 text-xs border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-300 flex items-center gap-1"
+                  onClick={e => handleMarkContactedQuick(row, e)}
+                  disabled={isActionBusy}
+                  title="Mark initial contact completed"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Contacted</span>
+                </Button>
+              )}
+
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-xs flex items-center gap-1 text-slate-700 dark:text-slate-300"
+                onClick={() => handleOpenLead(row)}
+                title="View full lead details, notes, and schedule"
+              >
+                <Eye className="w-3.5 h-3.5 text-slate-500" />
+                <span>Manage</span>
+              </Button>
+            </div>
+          );
+        },
+      },
     ],
-    []
+    [user?.id, actionLoadingId, page, searchQuery, statusFilter]
   );
 
   return (
@@ -275,6 +388,33 @@ export default function CounsellorDashboardPage() {
           </Button>
         }
       />
+
+      {/* Feedback Banner */}
+      {feedback && (
+        <div
+          className={`flex items-center justify-between p-3 rounded-lg border text-sm ${
+            feedback.type === 'success'
+              ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
+              : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {feedback.type === 'success' ? (
+              <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+            )}
+            <span>{feedback.message}</span>
+          </div>
+          <button
+            onClick={() => setFeedback(null)}
+            className="p-1 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 rounded text-slate-500"
+            aria-label="Dismiss message"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* 2. Real Metrics Grid */}
       <StatsGrid columns={4} isLoading={isLoading} loadingCount={4}>
@@ -347,6 +487,7 @@ export default function CounsellorDashboardPage() {
             errorTitle="Unable to load demo leads"
             errorDescription={errorMessage || 'An error occurred while fetching the leads pipeline.'}
             onRetry={() => fetchLeads(page, searchQuery, statusFilter)}
+            onRowClick={handleOpenLead}
             emptyTitle="No Leads Found"
             emptyDescription={
               searchQuery || statusFilter !== 'all'
@@ -373,6 +514,14 @@ export default function CounsellorDashboardPage() {
           />
         </div>
       </DashboardSection>
+
+      {/* Detailed Lead Drawer */}
+      <LeadDetailsDrawer
+        leadId={selectedLeadId}
+        isOpen={isDrawerOpen}
+        onClose={handleCloseDrawer}
+        onLeadUpdated={() => fetchLeads(page, searchQuery, statusFilter)}
+      />
     </div>
   );
 }

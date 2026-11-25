@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useTransition } from 'react';
+import React, { useState, useEffect, useCallback, useTransition } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Category, CourseLevel } from '@/types/course';
 import { Input } from '@/components/ui/input';
@@ -31,6 +31,13 @@ export function CourseFilters({
   const currentPrice = searchParams.get('price') || 'all';
   const currentSort = searchParams.get('sort') || 'popular';
 
+  // Local state for smooth search input without router thrashing
+  const [searchInput, setSearchInput] = useState(currentSearch);
+
+  useEffect(() => {
+    setSearchInput(currentSearch);
+  }, [currentSearch]);
+
   const updateFilters = useCallback(
     (key: string, value: string | null) => {
       const params = new URLSearchParams(searchParams.toString());
@@ -49,7 +56,17 @@ export function CourseFilters({
     [pathname, router, searchParams]
   );
 
+  // Debounce search input update
+  useEffect(() => {
+    if (searchInput === currentSearch) return;
+    const timer = setTimeout(() => {
+      updateFilters('search', searchInput.trim() || null);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchInput, currentSearch, updateFilters]);
+
   const clearAllFilters = useCallback(() => {
+    setSearchInput('');
     startTransition(() => {
       router.push(pathname, { scroll: false });
     });
@@ -106,14 +123,17 @@ export function CourseFilters({
           <Input
             type="text"
             placeholder="Search by title or topic..."
-            value={currentSearch}
-            onChange={(e) => updateFilters('search', e.target.value || null)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="pr-8 text-sm"
           />
-          {currentSearch ? (
+          {searchInput ? (
             <button
-              onClick={() => updateFilters('search', null)}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              onClick={() => {
+                setSearchInput('');
+                updateFilters('search', null);
+              }}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
               aria-label="Clear search"
             >
               <X className="w-4 h-4" />
@@ -252,4 +272,5 @@ export function CourseFilters({
     </div>
   );
 }
+
 export default CourseFilters;

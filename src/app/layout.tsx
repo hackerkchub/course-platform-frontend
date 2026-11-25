@@ -31,37 +31,39 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'CoursePlatform — Industry-Leading Software Engineering Certification',
-    template: '%s | CoursePlatform',
+    default: 'Guidexa — Build Skills That Build Your Future | Modern Technology Education',
+    template: '%s | Guidexa',
   },
   description:
-    'Master full stack web development, cloud computing, and backend engineering with verified industry experts and live cohort batches.',
+    'Learn in-demand technology skills, build real-world projects and prepare yourself for the opportunities of tomorrow with Guidexa.',
   keywords: [
     'software engineering',
     'web development',
     'full stack',
+    'python programming',
+    'data structures',
+    'generative ai',
     'react course',
     'node.js',
-    'mariadb',
-    'cloud engineering',
+    'project based learning',
     'certifications',
   ],
-  authors: [{ name: 'Course Platform' }],
-  creator: 'Course Platform',
+  authors: [{ name: 'Guidexa' }],
+  creator: 'Guidexa',
   openGraph: {
     type: 'website',
     locale: 'en_IN',
     url: siteUrl,
-    siteName: 'CoursePlatform',
-    title: 'CoursePlatform — Industry-Leading Software Engineering Certification',
+    siteName: 'Guidexa',
+    title: 'Guidexa — Build Skills That Build Your Future | Modern Technology Education',
     description:
-      'Master full stack web development, cloud computing, and backend engineering with verified industry experts.',
+      'Learn in-demand technology skills, build real-world projects and prepare yourself for the opportunities of tomorrow with Guidexa.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'CoursePlatform — Industry-Leading Software Engineering Certification',
+    title: 'Guidexa — Build Skills That Build Your Future | Modern Technology Education',
     description:
-      'Master full stack web development, cloud computing, and backend engineering with verified industry experts.',
+      'Learn in-demand technology skills, build real-world projects and prepare yourself for the opportunities of tomorrow with Guidexa.',
   },
 };
 

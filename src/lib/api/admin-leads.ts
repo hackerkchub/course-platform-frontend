@@ -28,17 +28,40 @@ export const adminLeadsApi = {
    * Authorized: counsellor, admin, super_admin
    */
   async getLeads(params: LeadFilterParams = {}): Promise<LeadsListResult> {
-    const res = await apiClient.get<ApiResponse<DemoLeadItem[]> & {
-      pagination?: { page: number; limit: number; total: number; totalPages?: number };
-      summary?: DemoRequestsSummary;
-    }>(API_ENDPOINTS.demo.adminRequests, { params });
+    const res = await apiClient.get<any>(API_ENDPOINTS.demo.adminRequests, { params });
 
-    const data = res.data;
-    const leads = Array.isArray(data.data) ? data.data : [];
-    const total = data.pagination?.total ?? leads.length;
-    const page = Number(params.page || 1);
-    const limit = Number(params.limit || 10);
-    const totalPages = data.pagination?.totalPages || Math.max(1, Math.ceil(total / limit));
+    const payload = res.data;
+
+    // Robust parsing supporting both:
+    // Structure A (actual backend): payload.data = { requests: [...], summary: {...}, pagination: {...} }
+    // Structure B (direct array): payload.data = [...]
+    // Structure C (root requests): payload.requests = [...]
+    let rawList: DemoLeadItem[] = [];
+    let summary: DemoRequestsSummary | undefined = undefined;
+    let paginationData: any = payload?.pagination;
+
+    if (Array.isArray(payload?.data)) {
+      rawList = payload.data;
+    } else if (payload?.data && typeof payload.data === 'object') {
+      if (Array.isArray(payload.data.requests)) {
+        rawList = payload.data.requests;
+      }
+      summary = payload.data.summary;
+      paginationData = payload.data.pagination || paginationData;
+    } else if (Array.isArray(payload?.requests)) {
+      rawList = payload.requests;
+      summary = payload.summary;
+    }
+
+    const leads: DemoLeadItem[] = Array.isArray(rawList) ? rawList : [];
+    const page = Number(params.page || paginationData?.page || 1);
+    const limit = Number(params.limit || paginationData?.limit || 10);
+    const total = Number(paginationData?.total ?? leads.length);
+    const totalPages = Number(
+      paginationData?.totalPages ||
+      paginationData?.total_pages ||
+      Math.max(1, Math.ceil(total / limit))
+    );
 
     return {
       leads,
@@ -48,7 +71,7 @@ export const adminLeadsApi = {
         total,
         totalPages,
       },
-      summary: data.summary,
+      summary: summary || payload?.summary,
     };
   },
 

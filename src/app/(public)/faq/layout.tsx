@@ -1,19 +1,28 @@
 import type { Metadata } from 'next';
 import { getSiteUrl } from '@/lib/site-url';
 
+const siteUrl = getSiteUrl();
+
 export const metadata: Metadata = {
-  title: 'Frequently Asked Questions | Course Platform',
+  title: 'Frequently Asked Questions | Guidexa — Help & Student Support',
   description:
-    'Find answers about courses, live training, enrollment, curriculum, mentorship and learning support.',
+    'Find clear answers to common questions about Guidexa technology courses, curriculum, enrollment, payments, hands-on projects, certificates, and student support.',
   alternates: {
-    canonical: `${getSiteUrl()}/faq`,
+    canonical: `${siteUrl}/faq`,
   },
   openGraph: {
-    title: 'Frequently Asked Questions | Course Platform',
+    title: 'Frequently Asked Questions | Guidexa — Help & Student Support',
     description:
-      'Find answers about courses, live training, enrollment, curriculum, mentorship and learning support.',
-    url: `${getSiteUrl()}/faq`,
+      'Find answers about Guidexa courses, learning experience, enrollment and platform features.',
+    url: `${siteUrl}/faq`,
+    siteName: 'Guidexa',
     type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Frequently Asked Questions | Guidexa — Help & Student Support',
+    description:
+      'Find answers about Guidexa courses, learning experience, enrollment and platform features.',
   },
 };
 

@@ -17,11 +17,11 @@ export function Footer() {
                 <GraduationCap className="w-5 h-5" />
               </div>
               <span className="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white">
-                Course<span className="text-blue-600">Platform</span>
+                Guid<span className="text-blue-600">exa</span>
               </span>
             </Link>
             <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-              Industry-aligned certification programs and live cohorts engineered to master modern software development.
+              Empowering learners through structured technology education, hands-on practice, and project-based mastery.
             </p>
             <div className="flex items-center gap-2 text-xs text-slate-500">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
@@ -80,6 +80,11 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/why-choose-us" className="hover:text-blue-600 transition-colors">
+                  Why Choose Guidexa
+                </Link>
+              </li>
+              <li>
                 <Link href="/faq" className="hover:text-blue-600 transition-colors">
                   Frequently Asked Questions
                 </Link>
@@ -134,7 +139,7 @@ export function Footer() {
 
         {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>© {new Date().getFullYear()} CoursePlatform. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Guidexa. All rights reserved.</p>
           <div className="flex items-center gap-6">
             <Link href="/privacy" className="hover:text-slate-800 transition-colors">
               Privacy Policy

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -83,6 +83,28 @@ export function DemoBookingModal({
 
   const returnUrl = `/courses/${courseSlug}`;
 
+  // Reset form and clear messages when modal opens or user profile changes
+  useEffect(() => {
+    if (isOpen) {
+      setServerError(null);
+      setSuccessReference(null);
+      reset({
+        student_name: user?.name || '',
+        email: user?.email || '',
+        phone: user?.phone || '',
+        city: '',
+        current_qualification: '',
+        experience_level: '',
+        preferred_demo_type: 'live',
+        preferred_date: '',
+        preferred_time: '',
+        message: '',
+        consent: true,
+        honeypot: '',
+      });
+    }
+  }, [isOpen, user, reset]);
+
   const handleRedirectToLogin = () => {
     onClose();
     router.push(`/login?returnUrl=${encodeURIComponent(returnUrl)}`);
@@ -122,6 +144,21 @@ export function DemoBookingModal({
 
       const refNo = res.data?.data?.reference_no || 'DEMO-' + Math.floor(100000 + Math.random() * 900000);
       setSuccessReference(refNo);
+      // Immediately reset form inputs to clean state while preserving successReference screen
+      reset({
+        student_name: user?.name || '',
+        email: user?.email || '',
+        phone: user?.phone || '',
+        city: '',
+        current_qualification: '',
+        experience_level: '',
+        preferred_demo_type: 'live',
+        preferred_date: '',
+        preferred_time: '',
+        message: '',
+        consent: true,
+        honeypot: '',
+      });
     } catch (err: unknown) {
       const axiosErr = err as {
         response?: {
@@ -148,10 +185,22 @@ export function DemoBookingModal({
   };
 
   const handleModalClose = () => {
-    if (successReference) {
-      reset();
-      setSuccessReference(null);
-    }
+    setSuccessReference(null);
+    setServerError(null);
+    reset({
+      student_name: user?.name || '',
+      email: user?.email || '',
+      phone: user?.phone || '',
+      city: '',
+      current_qualification: '',
+      experience_level: '',
+      preferred_demo_type: 'live',
+      preferred_date: '',
+      preferred_time: '',
+      message: '',
+      consent: true,
+      honeypot: '',
+    });
     onClose();
   };
 

@@ -104,11 +104,17 @@ describe('Phase 2: Complete Public Website Implementation Verification', () => {
       const h1Matches = content.match(/<h1[^>]*>([\s\S]*?)<\/h1>/g);
       assert.equal(h1Matches?.length, 1, 'About page must contain exactly one <h1> element');
 
-      // Core sections presence
-      assert.ok(content.includes('Production-Grade Projects'), 'Must describe Production-Grade Projects');
-      assert.ok(content.includes('Live Interactive Cohorts'), 'Must describe Live Interactive Cohorts');
-      assert.ok(content.includes('Thorough Code Reviews'), 'Must describe Thorough Code Reviews');
-      assert.ok(content.includes('The Learning Journey'), 'Must describe the learning lifecycle stages');
+      // Core learning philosophy pillars
+      assert.ok(content.includes('Learn with Structure'), 'Must describe structured learning pillar');
+      assert.ok(content.includes('Practice Regularly'), 'Must describe practice pillar');
+      assert.ok(content.includes('Build Real Projects'), 'Must describe real projects pillar');
+      assert.ok(content.includes('Grow Continuously'), 'Must describe continuous growth pillar');
+
+      // Learning journey stages
+      assert.ok(content.includes('Core Fundamentals'), 'Must describe foundational concepts');
+      assert.ok(content.includes('Practical Projects'), 'Must describe project building stage');
+
+      // Admissions CTA links
       assert.ok(content.includes('/courses'), 'Admissions CTA must link to /courses');
       assert.ok(content.includes('/contact'), 'Admissions CTA must link to /contact');
     });
@@ -128,7 +134,7 @@ describe('Phase 2: Complete Public Website Implementation Verification', () => {
   // 3. FAQ Data and Interactive Page
   // ----------------------------------------------------------------------------
   describe('3. FAQ Data & Page Architecture', () => {
-    test('FAQ data module contains all 8 approved categories and complete question items', async () => {
+    test('FAQ data module contains all 10 approved categories and complete question items', async () => {
       const faqDataPath = path.join(FRONTEND_ROOT, 'src/data/faqs.ts');
       assert.ok(fs.existsSync(faqDataPath), 'src/data/faqs.ts must exist');
 
@@ -137,15 +143,19 @@ describe('Phase 2: Complete Public Website Implementation Verification', () => {
       );
 
       const expectedCategories = [
-        'Admissions & Enrollment',
-        'Courses & Curriculum',
-        'Live Learning & Batches',
-        'Pricing & Fees',
-        'Certifications',
-        'Career Support',
-        'Technical Requirements',
-        'Demo Classes',
+        'General About Guidexa',
+        'Courses & Programs',
+        'Enrollment & Registration',
+        'Payments & Pricing',
+        'Learning Experience',
+        'Curriculum & Projects',
+        'Assessments & Assignments',
+        'Certificates & Verification',
+        'Live Classes & Mentorship',
+        'Account & Technical Issues',
       ];
+
+      assert.ok(FAQ_CATEGORIES.includes('All'), 'FAQ_CATEGORIES must include "All"');
 
       for (const cat of expectedCategories) {
         assert.ok(
@@ -156,7 +166,7 @@ describe('Phase 2: Complete Public Website Implementation Verification', () => {
         assert.ok(count >= 1, `Category "${cat}" must have at least 1 verified FAQ item`);
       }
 
-      assert.ok(FAQ_ITEMS.length >= 16, 'FAQ items must have comprehensive question coverage');
+      assert.ok(FAQ_ITEMS.length >= 30, 'FAQ items must have comprehensive question coverage (>= 30 items)');
     });
 
     test('FAQ search and category filter logic operates correctly', async () => {
@@ -164,11 +174,11 @@ describe('Phase 2: Complete Public Website Implementation Verification', () => {
       const { FAQ_ITEMS } = await import(`file://${path.resolve(faqDataPath)}`);
 
       // Test Category filter
-      const admissionsFaqs = FAQ_ITEMS.filter(
-        (i) => i.category === 'Admissions & Enrollment'
+      const enrollmentFaqs = FAQ_ITEMS.filter(
+        (i) => i.category === 'Enrollment & Registration'
       );
-      assert.ok(admissionsFaqs.length > 0);
-      assert.ok(admissionsFaqs.every((i) => i.category === 'Admissions & Enrollment'));
+      assert.ok(enrollmentFaqs.length > 0);
+      assert.ok(enrollmentFaqs.every((i) => i.category === 'Enrollment & Registration'));
 
       // Test Search query filter
       const query = 'certificate';
@@ -223,7 +233,7 @@ describe('Phase 2: Complete Public Website Implementation Verification', () => {
   describe('4. Homepage Enhancements & Integrity', () => {
     const homePath = path.join(FRONTEND_ROOT, 'src/app/(public)/page.tsx');
 
-    test('Homepage preserves existing hero, search, featured courses, and curated tracks', () => {
+    test('Homepage preserves hero, search, featured courses, and curated program tracks', () => {
       const content = fs.readFileSync(homePath, 'utf8');
 
       // Single H1 check
@@ -233,20 +243,21 @@ describe('Phase 2: Complete Public Website Implementation Verification', () => {
       // Preserved search and featured courses
       assert.ok(content.includes('action="/search"'), 'Search form must be preserved');
       assert.ok(content.includes('featuredCourses'), 'Featured courses must be preserved');
-      assert.ok(content.includes('Curated Learning Tracks'), 'Learning tracks must be preserved');
+      assert.ok(content.includes('recommendedPrograms'), 'Recommended program tracks must be preserved');
     });
 
     test('Homepage incorporates Impact Highlights and transparent Learning Approach (no fake reviews)', () => {
       const content = fs.readFileSync(homePath, 'utf8');
 
       // Impact Highlights
-      assert.ok(content.includes('Live & Interactive'), 'Must have Live & Interactive highlight');
-      assert.ok(content.includes('100% Practical'), 'Must have 100% Practical highlight');
-      assert.ok(content.includes('Direct Mentorship'), 'Must have Direct Mentorship highlight');
+      assert.ok(content.includes('Practical Learning'), 'Must have Practical Learning highlight');
+      assert.ok(content.includes('Industry-Relevant Skills'), 'Must have Industry-Relevant Skills highlight');
+      assert.ok(content.includes('Project-Based Approach'), 'Must have Project-Based Approach highlight');
 
       // Learning Approach section
-      assert.ok(content.includes('What You Can Expect in Every Cohort'), 'Must have Learning Approach section');
-      assert.ok(content.includes('Small Cohort Dynamic'), 'Must describe Small Cohort Dynamic');
+      assert.ok(content.includes('A Better Way to Learn Technology'), 'Must have Learning Approach section');
+      assert.ok(content.includes('Learn the Fundamentals'), 'Must describe foundational learning step');
+      assert.ok(content.includes('Build Projects'), 'Must describe practical project building step');
 
       // Verified absence of fake testimonials
       assert.ok(!content.includes('John Doe'), 'Must NOT invent fake student John Doe');
@@ -255,10 +266,18 @@ describe('Phase 2: Complete Public Website Implementation Verification', () => {
 
     test('Homepage includes FAQ Preview accordion with link to /faq', () => {
       const content = fs.readFileSync(homePath, 'utf8');
+      const faqAccordionPath = path.join(
+        FRONTEND_ROOT,
+        'src/components/home/faq-accordion.tsx'
+      );
 
-      assert.ok(content.includes('FAQ_ITEMS'), 'Must import FAQ_ITEMS for preview');
+      assert.ok(fs.existsSync(faqAccordionPath), 'faq-accordion.tsx component must exist');
+      assert.ok(content.includes('FaqAccordion'), 'Must render FaqAccordion component on homepage');
       assert.ok(content.includes('href="/faq"'), 'Must include CTA link to /faq');
-      assert.ok(content.includes('<details'), 'Must render accessible accordion details');
+
+      const accordionContent = fs.readFileSync(faqAccordionPath, 'utf8');
+      assert.ok(accordionContent.includes('HOMEPAGE_FAQS'), 'Accordion must define curated HOMEPAGE_FAQS');
+      assert.ok(accordionContent.includes('openIndices'), 'Accordion must support toggle state');
     });
 
     test('Homepage contains Schema.org Organization and WebSite JSON-LD', () => {
@@ -266,7 +285,7 @@ describe('Phase 2: Complete Public Website Implementation Verification', () => {
 
       assert.ok(content.includes("'@type': 'WebSite'"), 'Homepage must include WebSite JSON-LD');
       assert.ok(content.includes("'@type': 'Organization'"), 'Homepage must include Organization JSON-LD');
-      assert.ok(content.includes('Softmaxs Solution LLP'), 'Organization must reference Softmaxs Solution LLP');
+      assert.ok(content.includes("name: 'Guidexa'"), 'Organization must reference Guidexa');
     });
   });
 
@@ -282,9 +301,10 @@ describe('Phase 2: Complete Public Website Implementation Verification', () => {
       const content = fs.readFileSync(detailViewPath, 'utf8');
 
       assert.ok(content.includes('relatedCourses'), 'CourseDetailView must accept relatedCourses prop');
-      assert.ok(content.includes('Explore Related Courses'), 'Must include "Explore Related Courses" heading');
+      assert.ok(content.includes('Explore Related Programs'), 'Must include "Explore Related Programs" heading');
       assert.ok(content.includes('<CourseCard'), 'Must render CourseCard for related courses');
-      assert.ok(content.includes('Browse All Courses'), 'Must render fallback browse link when empty');
+      assert.ok(content.includes('View Full Catalog'), 'Must render catalog navigation link');
+      assert.ok(content.includes('href="/courses"'), 'Must link to /courses');
     });
 
     test('CourseDetailPage fetches related courses and safely filters out current course', () => {
@@ -333,7 +353,7 @@ describe('Phase 2: Complete Public Website Implementation Verification', () => {
   describe('6. Contact Page Admissions Polish', () => {
     const contactPath = path.join(FRONTEND_ROOT, 'src/app/(public)/contact/page.tsx');
 
-    test('Contact Page defines direct admissions channels: WhatsApp, Telephone, Email, and Course Demo', () => {
+    test('Contact Page defines direct admissions channels: WhatsApp, Telephone, Email, and Course Inquiries', () => {
       const content = fs.readFileSync(contactPath, 'utf8');
 
       // WhatsApp Chat
@@ -344,19 +364,30 @@ describe('Phase 2: Complete Public Website Implementation Verification', () => {
       assert.ok(content.includes('NEXT_PUBLIC_CONTACT_PHONE'), 'Must inspect configured contact phone');
       assert.ok(content.includes('NEXT_PUBLIC_SUPPORT_EMAIL'), 'Must inspect configured support email');
 
-      // Free Demo Class Selection
-      assert.ok(content.includes('Book a Free Demo Class'), 'Must explain Demo Class booking');
+      // Course Inquiries & Programs
+      assert.ok(content.includes('courseOfInterest'), 'Must support course of interest inquiries');
       assert.ok(content.includes('href="/courses"'), 'Must guide user to select course from /courses');
     });
 
-    test('Contact Page does not make unverified calls to nonexistent /api/contact endpoint', () => {
+    test('Contact Page integrates with verified API_ENDPOINTS.contact.submit and validates required inputs', () => {
       const content = fs.readFileSync(contactPath, 'utf8');
 
-      assert.ok(!content.includes("fetch('/api/contact'"), 'Must NOT call non-existent /api/contact');
-      assert.ok(!content.includes('apiClient.post(\'/api/contact\''), 'Must NOT post to /api/contact');
+      // Verified API submission endpoint
+      assert.ok(content.includes('API_ENDPOINTS.contact.submit'), 'Must post to verified API_ENDPOINTS.contact.submit');
+      assert.ok(content.includes('apiClient.post'), 'Must use apiClient.post for submission');
+
+      // Required validation fields
+      assert.ok(content.includes('contactFormSchema'), 'Must define Zod validation schema');
+      assert.ok(content.includes('phone: z'), 'Must validate phone field');
+      assert.ok(content.includes('Phone number is required'), 'Must require phone number');
+
+      // No fake phone placeholder
+      assert.ok(!content.includes('+00 0000000000'), 'Must NOT contain fake phone placeholder +00 0000000000');
+
+      // Submission result feedback
       assert.ok(
-        content.includes('submissionStatus'),
-        'Must provide honest informational feedback on inquiry assistance form'
+        content.includes('submissionResult'),
+        'Must provide submission result feedback with referenceId support'
       );
     });
 
@@ -387,11 +418,12 @@ describe('Phase 2: Complete Public Website Implementation Verification', () => {
   // 7. SEO, Sitemap and Robots
   // ----------------------------------------------------------------------------
   describe('7. SEO Sitemap & Robots Configuration', () => {
-    test('Sitemap includes /about and /faq routes with correct priority', () => {
+    test('Sitemap includes /about, /why-choose-us, and /faq routes with correct priority', () => {
       const sitemapPath = path.join(FRONTEND_ROOT, 'src/app/sitemap.ts');
       const content = fs.readFileSync(sitemapPath, 'utf8');
 
       assert.ok(content.includes("url: `${siteUrl}/about`"), 'Sitemap must contain /about');
+      assert.ok(content.includes("url: `${siteUrl}/why-choose-us`"), 'Sitemap must contain /why-choose-us');
       assert.ok(content.includes("url: `${siteUrl}/faq`"), 'Sitemap must contain /faq');
     });
 
